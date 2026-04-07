@@ -26,7 +26,7 @@ const Journal: React.FC = () => {
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [mood, setMood] = useState("");
   const [moodText, setMoodText] = useState("");
-  const [date, setDate] = useState("");
+  const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
   const [showAll, setShowAll] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
@@ -67,7 +67,7 @@ const Journal: React.FC = () => {
       });
       setMood("");
       setMoodText("");
-      setDate("");
+      setDate(new Date().toISOString().split("T")[0]);
       fetchEntries();
     } catch (err) {
       console.error("Error submitting journal entry:", err);
