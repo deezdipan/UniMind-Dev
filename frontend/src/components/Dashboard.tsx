@@ -246,7 +246,7 @@ const DashboardPage: React.FC = () => {
                   }`}
                 >
                   <p className="text-xs font-medium text-sage-800 truncate">{s.title || 'Chat'}</p>
-                  <p className="text-[10px] text-sage-400 mt-0.5">{formatDate(s.updated_at || s.timestamp)}</p>
+                  <p className="text-[10px] text-sage-400 mt-0.5">{formatDate(s.updated_at || s.timestamp || '')}</p>
                 </button>
               ))}
             </div>
