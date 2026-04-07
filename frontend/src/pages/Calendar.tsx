@@ -14,7 +14,6 @@ import {
     updateDoc,
     query,
     where,
-    orderBy,
     DocumentData,
 } from "firebase/firestore";
 import { app } from "../firebaseConfig";
@@ -106,26 +105,34 @@ const CalendarPage: React.FC = () => {
 
     // Load events
     const loadEvents = async () => {
-        const q = query(collection(db, "events"), where("user_id", "==", userId), orderBy("start", "asc"));
+        const q = query(collection(db, "events"), where("user_id", "==", userId));
         const snapshot = await getDocs(q);
-        const loadedEvents: MyEvent[] = snapshot.docs.map((doc) => {
-            const data = doc.data() as DocumentData;
-            const getValidDate = (value: any): Date =>
-                value && typeof value.toDate === "function" ? value.toDate() : new Date(value);
-            return {
-                id: doc.id,
-                title: data.title,
-                start: getValidDate(data.start),
-                end: getValidDate(data.end),
-            };
-        });
+        const getValidDate = (value: any): Date =>
+            value && typeof value.toDate === "function" ? value.toDate() : new Date(value);
+        const loadedEvents: MyEvent[] = snapshot.docs
+            .map((doc) => {
+                const data = doc.data() as DocumentData;
+                return {
+                    id: doc.id,
+                    title: data.title,
+                    start: getValidDate(data.start),
+                    end: getValidDate(data.end),
+                };
+            })
+            .sort((a, b) => a.start.getTime() - b.start.getTime());
         setEvents(loadedEvents);
     };
     useEffect(() => { loadEvents(); }, [userId]);
 
     // --- SLOT HANDLER (creates new event via modal) ---
     const handleSelectSlot = ({ start, end }: { start: Date; end: Date }) => {
-        setSelectedEvent({ id: "temp", title: "", start, end, isNew: true });
+        // In month view, react-big-calendar sets end to midnight of the next day.
+        // Default to start + 1 hour instead so the event stays on one day.
+        const adjustedEnd =
+            end.getHours() === 0 && end.getMinutes() === 0 && end.getTime() > start.getTime()
+                ? new Date(start.getTime() + 60 * 60 * 1000)
+                : end;
+        setSelectedEvent({ id: "temp", title: "", start, end: adjustedEnd, isNew: true });
     };
 
     // --- EVENT HANDLER (edit/delete) ---
@@ -137,15 +144,17 @@ const CalendarPage: React.FC = () => {
         newStart?: Date,
         newEnd?: Date
     ) => {
-        if (!title || !newStart || !newEnd) return;
+        if (action !== "delete" && (!title || !newStart || !newEnd)) return;
         const dateFormat = "yyyy-MM-dd'T'HH:mm:ss";
+        const start = newStart!;
+        const end = newEnd!;
 
         if (action === "create") {
             await addDoc(collection(db, "events"), {
                 user_id: userId,
                 title,
-                start: format(newStart, dateFormat),
-                end: format(newEnd, dateFormat),
+                start: format(start, dateFormat),
+                end: format(end, dateFormat),
                 created_at: new Date().toISOString(),
             });
         } else if (action === "delete" && selectedEvent) {
@@ -153,8 +162,8 @@ const CalendarPage: React.FC = () => {
         } else if (action === "update" && selectedEvent) {
             await updateDoc(doc(db, "events", selectedEvent.id), {
                 title,
-                start: format(newStart, dateFormat),
-                end: format(newEnd, dateFormat),
+                start: format(start, dateFormat),
+                end: format(end, dateFormat),
             });
         }
         setSelectedEvent(null);

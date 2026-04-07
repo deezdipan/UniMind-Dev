@@ -3,7 +3,7 @@ import { Calendar, dateFnsLocalizer, Views, SlotInfo, Event } from "react-big-ca
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import { format, parse, startOfWeek, getDay } from "date-fns";
 import { enUS } from "date-fns/locale";
-import { getFirestore, collection, addDoc, getDocs, query, where, orderBy, doc, deleteDoc, updateDoc } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query, where, doc, deleteDoc, updateDoc } from "firebase/firestore";
 import { app } from "../firebaseConfig";
 import { useAuth0 } from "@auth0/auth0-react";
 
@@ -54,8 +54,7 @@ const EventsCalendar: React.FC = () => {
     try {
       const qRef = query(
         collection(db, "events"),
-        where("user_id", "==", userId),
-        orderBy("start", "asc")
+        where("user_id", "==", userId)
       );
       const snap = await getDocs(qRef);
 
