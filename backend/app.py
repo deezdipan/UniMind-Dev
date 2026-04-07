@@ -109,16 +109,42 @@ SYSTEM_PROMPT = (
 )
 
 
+@app.route("/api/chat/sessions", methods=["GET"])
+def chat_sessions():
+    user_id = request.args.get("user_id")
+    if not user_id:
+        return jsonify({"sessions": []})
+
+    docs = db.collection("chat_history").where("user_id", "==", user_id).stream()
+
+    sessions: dict = {}
+    for d in docs:
+        data = d.to_dict()
+        sid = data.get("session_id", "default")
+        ts = data.get("timestamp", "")
+        if sid not in sessions or ts < sessions[sid]["timestamp"]:
+            sessions[sid] = {
+                "session_id": sid,
+                "title": data.get("user_message", "Chat")[:60],
+                "timestamp": ts,
+            }
+
+    session_list = sorted(sessions.values(), key=lambda s: s["timestamp"], reverse=True)
+    return jsonify({"sessions": session_list})
+
+
 @app.route("/api/chat/history", methods=["GET"])
 def chat_history():
     user_id = request.args.get("user_id")
-    if not user_id:
+    session_id = request.args.get("session_id")
+    if not user_id or not session_id:
         return jsonify({"messages": []})
 
     docs = (
         db.collection("chat_history")
         .where("user_id", "==", user_id)
-        .limit(50)
+        .where("session_id", "==", session_id)
+        .limit(100)
         .stream()
     )
     messages = sorted([d.to_dict() for d in docs], key=lambda m: m.get("timestamp", ""))
@@ -130,6 +156,7 @@ def chat():
     body = request.get_json()
     user_message = body.get("message", "").strip()
     user_id = body.get("user_id", "guest")
+    session_id = body.get("session_id", "default")
     calendar_events = body.get("calendar_events", [])
 
     if not user_message:
@@ -150,6 +177,7 @@ def chat():
     timestamp = datetime.utcnow().isoformat()
     db.collection("chat_history").add({
         "user_id": user_id,
+        "session_id": session_id,
         "user_message": user_message,
         "ai_response": ai_reply,
         "timestamp": timestamp,
