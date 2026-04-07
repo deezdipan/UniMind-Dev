@@ -222,7 +222,7 @@ const DashboardPage: React.FC = () => {
         </div>
 
         {/* Chat panel */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-lavender-200 flex overflow-hidden" style={{ minHeight: '420px' }}>
+        <div className="lg:col-span-2 bg-white rounded-xl border border-lavender-200 flex overflow-hidden" style={{ height: '480px' }}>
 
           {/* Session sidebar */}
           <div className="w-44 flex-shrink-0 border-r border-lavender-100 bg-lavender-50 flex flex-col">
@@ -273,17 +273,19 @@ const DashboardPage: React.FC = () => {
                 </div>
               )}
               {!loadingSession && messages.map((msg, i) => (
-                <div key={i}>
+                <div key={i} className="space-y-2">
                   {msg.user_message && (
-                    <div className="bg-lavender-100 rounded-lg p-3 mb-2 ml-8">
-                      <p className="text-sage-800">{msg.user_message}</p>
+                    <div className="flex justify-end">
+                      <div className="bg-lavender-100 rounded-2xl rounded-tr-sm px-4 py-2 max-w-[75%]">
+                        <p className="text-sage-800 text-sm">{msg.user_message}</p>
+                      </div>
                     </div>
                   )}
                   {msg.ai_response && (
-                    <div className="bg-sage-100 rounded-lg p-3 mr-8">
-                      <div className="flex items-start">
-                        <span className="text-2xl mr-2">🤖</span>
-                        <p className="text-sage-800 flex-1">{msg.ai_response}</p>
+                    <div className="flex justify-start items-start gap-2">
+                      <span className="text-xl mt-0.5 flex-shrink-0">🤖</span>
+                      <div className="bg-sage-100 rounded-2xl rounded-tl-sm px-4 py-2 max-w-[75%]">
+                        <p className="text-sage-800 text-sm">{msg.ai_response}</p>
                       </div>
                     </div>
                   )}
