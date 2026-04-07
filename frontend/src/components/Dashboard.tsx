@@ -124,12 +124,8 @@ const DashboardPage: React.FC = () => {
         session_id: activeSessionId,
       };
       setMessages((prev) => [...prev, newMessage]);
-
-      // If this was a new session, add it to the sidebar and refresh
-      if (isNewSession) {
-        setIsNewSession(false);
-        await fetchSessions();
-      }
+      setIsNewSession(false);
+      await fetchSessions(); // always refresh so active session moves to top
     } catch (error) {
       console.error('Error sending message:', error);
     } finally {

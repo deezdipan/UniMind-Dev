@@ -109,27 +109,30 @@ SYSTEM_PROMPT = (
 )
 
 
+def generate_session_title(user_message: str, ai_response: str) -> str:
+    try:
+        prompt = (
+            f"Give a 4-6 word title summarizing this conversation. "
+            f"Return only the title, no quotes or punctuation.\n"
+            f"User: {user_message}\nAI: {ai_response}"
+        )
+        return call_llm([{"role": "user", "content": prompt}], max_tokens=20).strip()
+    except Exception:
+        return user_message[:40]
+
+
 @app.route("/api/chat/sessions", methods=["GET"])
 def chat_sessions():
     user_id = request.args.get("user_id")
     if not user_id:
         return jsonify({"sessions": []})
 
-    docs = db.collection("chat_history").where("user_id", "==", user_id).stream()
-
-    sessions: dict = {}
-    for d in docs:
-        data = d.to_dict()
-        sid = data.get("session_id", "default")
-        ts = data.get("timestamp", "")
-        if sid not in sessions or ts < sessions[sid]["timestamp"]:
-            sessions[sid] = {
-                "session_id": sid,
-                "title": data.get("user_message", "Chat")[:60],
-                "timestamp": ts,
-            }
-
-    session_list = sorted(sessions.values(), key=lambda s: s["timestamp"], reverse=True)
+    docs = db.collection("sessions").where("user_id", "==", user_id).stream()
+    session_list = sorted(
+        [d.to_dict() for d in docs],
+        key=lambda s: s.get("updated_at", ""),
+        reverse=True,
+    )
     return jsonify({"sessions": session_list})
 
 
@@ -182,6 +185,22 @@ def chat():
         "ai_response": ai_reply,
         "timestamp": timestamp,
     })
+
+    # Upsert session metadata
+    session_ref = db.collection("sessions").document(f"{user_id}_{session_id}")
+    session_doc = session_ref.get()
+    if not session_doc.exists:
+        title = generate_session_title(user_message, ai_reply)
+        session_ref.set({
+            "user_id": user_id,
+            "session_id": session_id,
+            "title": title,
+            "created_at": timestamp,
+            "updated_at": timestamp,
+        })
+    else:
+        session_ref.update({"updated_at": timestamp})
+
     return jsonify({"response": ai_reply, "timestamp": timestamp})
 
 
