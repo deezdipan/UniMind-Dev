@@ -140,18 +140,17 @@ const DashboardPage: React.FC = () => {
 
     try {
       await addDoc(collection(db, 'journals'), {
-        user_id: 'demo_user',
+        user_id: userId,
         mood: mood,
         timestamp: new Date().toISOString(),
       });
-      console.log('Mood saved to Firestore!');
     } catch (error) {
       console.error('Error saving mood:', error);
     }
 
     try {
       await axios.post(`${API_URL}/api/journal`, {
-        user_id: 'demo_user',
+        user_id: userId,
         mood: mood,
         mood_text: '',
       });

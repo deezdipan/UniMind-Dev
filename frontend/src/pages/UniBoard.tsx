@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
+import { useAuth0 } from "@auth0/auth0-react";
 
 interface UniBoardData {
   move_message: string;
@@ -36,6 +37,8 @@ function getWeekOfYear(date: Date) {
 }
 
 const UniBoard: React.FC = () => {
+  const { user } = useAuth0();
+  const userId = user?.sub || "demo_user";
   const [data, setData] = useState<UniBoardData | null>(null);
   const [completionMessage, setCompletionMessage] = useState<string | null>(null);
   const navigate = useNavigate();
@@ -63,7 +66,7 @@ const UniBoard: React.FC = () => {
     // load board
     const fetchBoard = async () => {
       try {
-        const res = await axios.get(`${API_URL}/api/uniboard`);
+        const res = await axios.get(`${API_URL}/api/uniboard`, { params: { user_id: userId } });
         setData(res.data);
       } catch (err) {
         console.error("Error fetching UniBoard:", err);
@@ -80,7 +83,7 @@ const UniBoard: React.FC = () => {
         setCompletedIds([]);
       }
     }
-  }, [storageKey]);
+  }, [storageKey, userId]);
 
   const handleCompleteChallenge = async (challengeId: number) => {
     if (completedIds.includes(challengeId)) return;
@@ -88,7 +91,7 @@ const UniBoard: React.FC = () => {
     try {
       // award XP on backend
       await axios.post(`${API_URL}/api/xp`, {
-        user_id: "demo_user", // swap for real user id if you have it in context
+        user_id: userId,
         amount: 15,
       });
 
