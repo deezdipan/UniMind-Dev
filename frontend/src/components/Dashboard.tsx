@@ -44,7 +44,7 @@ const DashboardPage: React.FC = () => {
   const userId = user?.sub || 'demo_user';
   const navigate = useNavigate();
   const db = getFirestore(app);
-  const bottomRef = useRef<HTMLDivElement | null>(null);
+  const chatContainerRef = useRef<HTMLDivElement | null>(null);
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string>(() => generateSessionId());
@@ -69,7 +69,9 @@ const DashboardPage: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+    }
   }, [messages]);
 
   const fetchSessions = async () => {
@@ -262,7 +264,7 @@ const DashboardPage: React.FC = () => {
               </h4>
             </div>
 
-            <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
+            <div ref={chatContainerRef} className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
               {loadingSession && (
                 <div className="text-center py-8 text-sage-400 text-sm">Loading...</div>
               )}
@@ -291,7 +293,6 @@ const DashboardPage: React.FC = () => {
                   )}
                 </div>
               ))}
-              <div ref={bottomRef} />
             </div>
 
             <div className="flex gap-2">
