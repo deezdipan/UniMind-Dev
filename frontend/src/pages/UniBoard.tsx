@@ -61,6 +61,7 @@ const UniBoard: React.FC = () => {
 
   // track which of the 3 the user completed (in localStorage for the week)
   const [completedIds, setCompletedIds] = useState<number[]>([]);
+  const [confirmUncomplete, setConfirmUncomplete] = useState<number | null>(null);
 
   useEffect(() => {
     // load board
@@ -84,6 +85,24 @@ const UniBoard: React.FC = () => {
       }
     }
   }, [storageKey, userId]);
+
+  const handleUncompleteChallenge = async (challengeId: number) => {
+    try {
+      await axios.post(`${API_URL}/api/xp/deduct`, { user_id: userId, amount: 15 });
+      setData((prev) =>
+        prev ? { ...prev, xp: { ...prev.xp, total: Math.max(0, prev.xp.total - 15) } } : prev
+      );
+      const updated = completedIds.filter((id) => id !== challengeId);
+      setCompletedIds(updated);
+      localStorage.setItem(storageKey, JSON.stringify(updated));
+      setCompletionMessage("Challenge marked incomplete. 15 XP removed.");
+      setTimeout(() => setCompletionMessage(null), 3500);
+    } catch (err) {
+      console.error("Error deducting XP:", err);
+    } finally {
+      setConfirmUncomplete(null);
+    }
+  };
 
   const handleCompleteChallenge = async (challengeId: number) => {
     if (completedIds.includes(challengeId)) return;
@@ -278,11 +297,14 @@ const UniBoard: React.FC = () => {
                 >
                   <p className="text-sm text-gray-700 flex-1">{challenge.text}</p>
                   <button
-                    onClick={() => handleCompleteChallenge(challenge.id)}
-                    disabled={isDone}
+                    onClick={() =>
+                      isDone
+                        ? setConfirmUncomplete(challenge.id)
+                        : handleCompleteChallenge(challenge.id)
+                    }
                     className={`px-3 py-2 rounded-md text-sm font-semibold transition ${
                       isDone
-                        ? "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        ? "bg-green-100 text-green-700 hover:bg-red-50 hover:text-red-600 border border-green-200"
                         : "bg-purple-600 text-white hover:bg-purple-700"
                     }`}
                   >
@@ -308,6 +330,32 @@ const UniBoard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {/* Uncomplete confirmation modal */}
+      {confirmUncomplete !== null && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl p-6 max-w-sm w-full mx-4">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Mark as incomplete?</h3>
+            <p className="text-sm text-gray-600 mb-6">
+              This will remove <span className="font-semibold text-red-600">15 XP</span> from your total. Are you sure?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setConfirmUncomplete(null)}
+                className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 text-sm"
+              >
+                Keep it
+              </button>
+              <button
+                onClick={() => handleUncompleteChallenge(confirmUncomplete)}
+                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 text-sm font-semibold"
+              >
+                Yes, remove XP
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

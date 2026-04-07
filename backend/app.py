@@ -301,23 +301,29 @@ def get_uniboard():
     return jsonify({**data, "move_message": MOVE_MESSAGES[day_index]})
 
 
-@app.route("/api/xp", methods=["POST"])
-def award_xp():
-    body = request.get_json()
-    user_id = body.get("user_id", "demo_user")
-    amount = int(body.get("amount", 10))
-
+def _update_xp(user_id: str, delta: int) -> dict:
     data = get_uniboard_doc(user_id)
-    new_total = data["xp"]["total"] + amount
-    new_badges = new_total // 100   # 1 badge per 100 XP
-    new_pos = min(14, new_total // 35)  # advance board position
-
+    new_total = max(0, data["xp"]["total"] + delta)
+    new_badges = new_total // 100
+    new_pos = min(14, new_total // 35)
     db.collection("uniboard").document(user_id).update({
         "xp.total": new_total,
         "badges": new_badges,
         "board_pos": new_pos,
     })
-    return jsonify({"xp_total": new_total, "badges": new_badges, "board_pos": new_pos})
+    return {"xp_total": new_total, "badges": new_badges, "board_pos": new_pos}
+
+
+@app.route("/api/xp", methods=["POST"])
+def award_xp():
+    body = request.get_json()
+    return jsonify(_update_xp(body.get("user_id", "demo_user"), int(body.get("amount", 10))))
+
+
+@app.route("/api/xp/deduct", methods=["POST"])
+def deduct_xp():
+    body = request.get_json()
+    return jsonify(_update_xp(body.get("user_id", "demo_user"), -int(body.get("amount", 10))))
 
 
 if __name__ == "__main__":
