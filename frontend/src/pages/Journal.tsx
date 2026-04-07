@@ -198,79 +198,80 @@ const Journal: React.FC = () => {
       )}
 
       {/* Mood Trend Chart */}
-      {entries.length > 0 && (
-  <>
-    <h2 className="text-xl font-semibold mt-8 mb-3">📈 Mood Trends (Last 7 Days)</h2>
+      {entries.length > 0 && (() => {
+        const moodScore: Record<string, number> = { happy: 4, neutral: 3, sad: 2, stressed: 1 };
+        const moodColor: Record<string, string> = {
+          happy: "#10B981",
+          neutral: "#6B7280",
+          sad: "#3B82F6",
+          stressed: "#EF4444",
+        };
+        const moodLabel: Record<string, string> = {
+          happy: "😊 Happy",
+          neutral: "😐 Neutral",
+          sad: "😢 Sad",
+          stressed: "😤 Stressed",
+        };
 
-    <ResponsiveContainer width="100%" height={250}>
-      <LineChart
-        data={entries
-          .filter((entry) => {
-            const today = new Date();
-            const entryDate = new Date(entry.date);
-            const diffDays = (today.getTime() - entryDate.getTime()) / (1000 * 60 * 60 * 24);
+        const chartData = entries
+          .filter((e) => {
+            const diffDays = (Date.now() - new Date(e.date).getTime()) / (1000 * 60 * 60 * 24);
             return diffDays <= 7;
           })
-          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()) // chronological order for the line
-        }
-      >
-        <XAxis dataKey="date" />
-        <YAxis hide />
-        <Tooltip
-          formatter={(value) => {
-            const emojiMap: Record<string, string> = {
-              happy: "😊 Happy",
-              neutral: "😐 Neutral",
-              sad: "😢 Sad",
-              stressed: "😤 Stressed",
-            };
-            return emojiMap[value as string] || value;
-          }}
-        />
+          .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+          .map((e) => ({
+            date: new Date(e.date).toLocaleDateString([], { month: "short", day: "numeric" }),
+            score: moodScore[e.mood] ?? 3,
+            mood: e.mood,
+          }));
 
-        {["happy", "neutral", "sad", "stressed"].map((mood) => {
-          const colorMap: Record<string, string> = {
-            happy: "#10B981", // green
-            neutral: "#6B7280", // gray
-            sad: "#3B82F6", // blue
-            stressed: "#EF4444", // red
-          };
-          return (
-            <Line
-              key={mood}
-              type="monotone"
-              dataKey="mood"
-              data={entries.filter((e) => e.mood === mood)}
-              stroke={colorMap[mood]}
-              strokeWidth={3}
-              dot={{
-                stroke: colorMap[mood],
-                fill: colorMap[mood],
-                r: 5,
-              }}
-              isAnimationActive={false}
-            />
-          );
-        })}
-      </LineChart>
-    </ResponsiveContainer>
-
-    <div className="flex justify-center gap-6 mt-3 text-sm text-gray-600">
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 bg-green-500 rounded-full"></div> Happy
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 bg-gray-500 rounded-full"></div> Neutral
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 bg-blue-500 rounded-full"></div> Sad
-      </div>
-      <div className="flex items-center gap-2">
-        <div className="w-4 h-4 bg-red-500 rounded-full"></div> Stressed
-      </div>
-    </div>
-  </>
-)}
+        return (
+          <>
+            <h2 className="text-xl font-semibold mt-8 mb-3">📈 Mood Trends (Last 7 Days)</h2>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={chartData}>
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                <YAxis domain={[1, 4]} hide />
+                <Tooltip
+                  formatter={(_: any, __: any, props: any) => [
+                    moodLabel[props.payload.mood] || props.payload.mood,
+                    "Mood",
+                  ]}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="score"
+                  stroke="#8B5CF6"
+                  strokeWidth={3}
+                  dot={(props: any) => {
+                    const color = moodColor[props.payload.mood] || "#8B5CF6";
+                    return (
+                      <circle
+                        key={props.index}
+                        cx={props.cx}
+                        cy={props.cy}
+                        r={6}
+                        fill={color}
+                        stroke="#fff"
+                        strokeWidth={2}
+                      />
+                    );
+                  }}
+                  isAnimationActive={false}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center gap-6 mt-3 text-sm text-gray-600">
+              {Object.entries(moodColor).map(([m, c]) => (
+                <div key={m} className="flex items-center gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ backgroundColor: c }} />
+                  <span className="capitalize">{m}</span>
+                </div>
+              ))}
+            </div>
+          </>
+        );
+      })()}
 
 
       {/* Delete Confirmation Modal */}
