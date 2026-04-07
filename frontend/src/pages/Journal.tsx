@@ -28,6 +28,7 @@ const Journal: React.FC = () => {
   const [moodText, setMoodText] = useState("");
   const [date, setDate] = useState(() => new Date().toISOString().split("T")[0]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [entryToDelete, setEntryToDelete] = useState<JournalEntry | null>(null);
 
@@ -56,7 +57,11 @@ const Journal: React.FC = () => {
 
   // ✅ Add entry
   const submitEntry = async () => {
-    if (!mood) return alert("Please select a mood!");
+    if (!mood) {
+      setError("Please select a mood before saving.");
+      return;
+    }
+    setError(null);
     setLoading(true);
     try {
       await axios.post(`${API_URL}/api/journal`, {
@@ -71,6 +76,7 @@ const Journal: React.FC = () => {
       fetchEntries();
     } catch (err) {
       console.error("Error submitting journal entry:", err);
+      setError("Failed to save entry. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -159,6 +165,7 @@ const Journal: React.FC = () => {
       >
         {loading ? "Saving..." : "Save Entry"}
       </button>
+      {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
 
       {/* Journal History */}
       <h2 className="text-xl font-semibold mt-8 mb-3">📅 Recent Entries</h2>
